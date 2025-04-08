@@ -120,6 +120,17 @@ namespace move_base {
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
     planner_costmap_ros_->pause();
 
+    // Initialize the stop point
+    geometry_msgs::PoseStamped stopPoint;
+    stopPoint.header.frame_id = "map";
+    stopPoint.header.stamp = ros::Time::now();
+    stopPoint.pose.position.x = 1.0; // Example stop point x coordinate
+    stopPoint.pose.position.y = 2.0; // Example stop point y coordinate
+    stopPoint.pose.orientation.w = 1.0; // Example orientation (facing up)
+
+    // Store the stop point in a member variable
+    stop_point_ = stopPoint;
+
     //initialize the global planner
     try {
       planner_ = bgp_loader_.createInstance(global_planner);
@@ -471,6 +482,34 @@ namespace move_base {
     tc_.reset();
   }
 
+  bool MoveBase::detectReachedGoal(const geometry_msgs::PoseStamped &currentPose, const geometry_msgs::PoseStamped &stopPose, double tolerance)
+  {
+     // Calculate the distance between the current pose and the stop pose
+     double diffDistance = hypot(currentPose.pose.position.x - stopPose.pose.position.x,
+                                  currentPose.pose.position.y - stopPose.pose.position.y);
+
+     // Check if the robot is within the tolerance distance of the stop pose
+     if (diffDistance < tolerance)
+     {
+         // Calculate the angle difference between the current pose and the stop pose
+          double currentpose_yaw = tf2::getYaw(currentPose.pose.orientation);
+          double targetpose_yaw = tf2::getYaw(stopPose.pose.orientation);
+          double diffangle = fabs(currentpose_yaw - targetpose_yaw);
+
+          // Normalize the angle difference
+          if (diffangle > M_PI)
+              diffangle = 2 * M_PI - diffangle;
+
+          // Check if the robot is oriented correctly
+          if (diffangle < 0.1) // Assuming a tolerance of 0.1 radians (about 5.7 degrees)
+          {
+              return true; // Robot has reached the goal
+          }
+      }
+
+      return false; // Robot has not reached the goal
+  }
+
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
 
@@ -814,6 +853,7 @@ namespace move_base {
     feedback.base_position = current_position;
     as_->publishFeedback(feedback);
 
+
     //check to see if we've moved far enough to reset our oscillation timeout
     if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
     {
@@ -896,7 +936,13 @@ namespace move_base {
           as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           return true;
         }
-
+        if (detectReachedGoal(current_position, stop_point_, 0.5)) // Assuming a tolerance of 0.5 meters
+        {
+          publishZeroVelocity();
+          ROS_INFO("Reached stop point. Waiting for 10 seconds.");
+          ros::Duration(10.0).sleep(); // Wait for 10 seconds
+          return true;
+        }
         //check for an oscillation condition
         if(oscillation_timeout_ > 0.0 &&
             last_oscillation_reset_ + ros::Duration(oscillation_timeout_) < ros::Time::now())
