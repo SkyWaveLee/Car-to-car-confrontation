@@ -1,0 +1,45 @@
+<launch>      
+      <arg name="odom_frame_id"  default="odom"/>
+      <arg name="robot_frame_id"  default="base_link"/>
+      <arg name="gyro_frame_id"  default="imu_link"/>
+
+      <!-- turn on base_serial 开启底层单片机的控制节点  -->
+      <node pkg="dzactuator" type="dzactuator_node" name="dzactuator" output="screen" respawn="false">
+        <param name="serial_port_name"    type="string" value="/dev/dzactutor"/>  
+        <param name="serial_baud_rate"   type="int"    value="115200"/>
+        <param name="odom_frame_id"      type="string" value="$(arg odom_frame_id)"/> 
+        <param name="robot_frame_id"     type="string" value="$(arg robot_frame_id)"/> 
+        <param name="gyro_frame_id"      type="string" value="$(arg gyro_frame_id)"/> 
+        <param name="calibrate_lineSpeed" value = "0" type = "int"/> 
+        <param name="ticksPerMeter" value = "1380" type = "int"/>      <!-- 1235  -->
+        <param name="ticksPer2PI" value = "1000" type = "int"/>
+      </node>
+
+      <include file="$(find rplidar_ros)/launch/rplidar_s3e.launch"/>
+
+      <node pkg="tf" type="static_transform_publisher" name="base_link_to_imulink"
+          args="-0.02 0.03 0.08 0.0 0.0  0.0 base_link imu_link 100" >
+      </node> 
+
+      <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser4"
+          args="0.149 0.0 0.109 3.14159 0.0 0.0  base_link laser 100" >
+      </node> 
+
+      <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf" output="screen"  respawn="false">
+        <param name="output_frame" value="odom"/>
+        <param name="base_footprint_frame" value="base_link"/>
+        <param name="freq" value="30.0"/>
+        <param name="sensor_timeout" value="1.0"/>
+        <param name="odom_used" value="true"/>
+        <param name="imu_used" value="true"/>
+        <param name="vo_used" value="false"/>
+        <param name="gps_used" value="false"/>
+        <param name="debug" value="false"/>
+        <param name="self_diagnose" value="false"/> 
+
+      </node>
+
+  <include file="$(find dzactuator)/launch/dzcamera.launch" />
+
+
+ </launch>

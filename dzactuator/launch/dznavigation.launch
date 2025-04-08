@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<launch>
+
+  <!-- <include file="$(find dzactuator)/launch/bringup.launch" /> -->
+  <!-- <include file="$(find dzactuator)/launch/amcl.launch" /> -->
+
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+		<param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
+    <!-- <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" /> -->
+
+    <rosparam file="$(find dzactuator)/param/costmap_common.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find dzactuator)/param/costmap_common.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find dzactuator)/param/local_costmap.yaml" command="load" />
+    <rosparam file="$(find dzactuator)/param/global_costmap.yaml" command="load" />
+    <rosparam file="$(find dzactuator)/param/move_base_planner.yaml" command="load" />
+ 
+    <rosparam command="load" file="$(find dzactuator)/param/base_global_planner.yaml" />
+	  <rosparam command="load" file="$(find dzactuator)/param/teb_local_planner.yaml" />
+    <rosparam file="$(find dzactuator)/param/move_base_params.yaml" command="load" />
+    <!-- <rosparam command="load" file="$(find dzactuator)/param/dwa_loacl_planner.yaml" /> -->
+
+  </node>
+   <node pkg="clear_costmap_recovery" type="costmap_cleaner" name="costmap_cleaner" respawn="true" output="screen"/>
+
+</launch>
