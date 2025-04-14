@@ -313,6 +313,7 @@ namespace move_base
     // sub for multi_robor  stop_CMD
 
     geometry_msgs::PoseStamped stoppoint_hold;
+    geometry_msgs::PoseStamped stop_point_;
 
     int pub_Num = 0;
     int minIndex = 0;
