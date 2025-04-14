@@ -266,6 +266,8 @@ namespace move_base
     ros::Publisher hglocationpub;
     ros::Publisher stop_point_signal;
 
+    geometry_msgs::PoseStamped stop_point_;
+
     std_msgs::UInt8 stop_point_signal_msg;
     move_base_msgs::hgpathplanner suggestroad;
     move_base_msgs::hglocation currentlocation;
